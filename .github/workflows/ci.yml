@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Syntax check every file
+        run: python -m compileall -q prefixkv tests
+      # Nothing here needs a GPU, a model, or a tokenizer: the inputs are CSV files
+      # and the outputs are counts of tokens.
+      - name: Tests
+        run: pytest -q
+      # A generated fixture that has drifted from its generator is a fixture nobody
+      # can check, and every published number in this repository is measured on these.
+      - name: Traces are reproducible from their generator
+        run: |
+          python tests/traces/make_traces.py
+          git diff --exit-code -- tests/traces/
+      - name: The CLI actually runs
+        run: |
+          prefixkv trace    tests/traces/EXAMPLE_agent.csv
+          prefixkv ceilings tests/traces/EXAMPLE_multiturn.csv
+          prefixkv run      tests/traces/EXAMPLE_system_prompt.csv --audit
+          prefixkv sweep    tests/traces/EXAMPLE_multiturn.csv --over block_size --values 8 16 64
+          # `--fail-on` is a top-level option and belongs before the subcommand.
+          # Written after it, argparse exits 2 with a usage error without ever
+          # running audit -- and `test $? -eq 1` then compares 2 against 1 and
+          # fails, so the guard that was supposed to allow the expected exit 1
+          # turned a usage error into a red job on every push.
+          prefixkv --fail-on violation audit tests/traces/EXAMPLE_shared_last.csv || test $? -eq 1

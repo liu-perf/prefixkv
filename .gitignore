@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Traces derived from real traffic. The segment names in a trace are a description
+# of somebody's prompts -- a system prompt's identity, a tool schema's presence, how
+# long each turn was. The repository ships synthetic traces only.
+tests/traces/*.local.csv
+traces/

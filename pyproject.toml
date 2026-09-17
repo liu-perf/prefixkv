@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prefixkv"
+version = "0.1.0"
+description = "How much of a prefix cache's saving is the cache, and how much is the traffic: every prompt token attributed to hit, eviction, block granularity, or novel."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [{ name = "liu-perf" }]
+keywords = ["llm", "inference", "prefix-cache", "kv-cache", "paged-attention",
+            "radix-attention", "prompt-caching", "vllm", "sglang", "simulator"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# No dependencies, and in particular no tokenizer. What a prefix cache cares about
+# is whether two token sequences are equal, and equality of synthetic ids is exactly
+# as sharp as equality of real ones -- a real tokenizer would add a download and a
+# licence question without making a single number here more accurate.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.5"]
+
+[project.urls]
+Homepage = "https://github.com/liu-perf/prefixkv"
+Documentation = "https://liu-perf.github.io/prefixkv/"
+
+[project.scripts]
+prefixkv = "prefixkv.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["prefixkv*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# Pinned explicitly rather than left to whatever the installed ruff defaults to, so
+# a new ruff release cannot turn a green CI red without anybody changing code.
+select = ["E4", "E7", "E9", "F", "B", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# The tests and the generator add the repository root to sys.path before importing,
+# so their imports legitimately run after code.
+"tests/*" = ["E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
